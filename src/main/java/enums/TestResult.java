@@ -4,5 +4,6 @@ public enum TestResult {
     SUCCESS,
     FAILED,
     ERROR,
-    SKIPPED
+    SKIPPED,
+    DISABLE
 }

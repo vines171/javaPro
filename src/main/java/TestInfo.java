@@ -4,12 +4,12 @@ import java.util.Objects;
 
 public class TestInfo {
     private TestResult result;
-    private String name;
+    private String testName;
     private Throwable exception;
 
-    public TestInfo(TestResult result, String name, Throwable exception) {
+    public TestInfo(TestResult result, String testName, Throwable exception) {
         this.result = result;
-        this.name = name;
+        this.testName = this.testName;
         this.exception = exception;
     }
 
@@ -18,7 +18,7 @@ public class TestInfo {
     }
 
     public String getName() {
-        return name;
+        return testName;
     }
 
     public Throwable getException() {
@@ -29,8 +29,8 @@ public class TestInfo {
     public String toString() {
         return "Test{" +
                 "result=" + result +
-                ", name='" + name + '\'' +
-                ", exception=" + (exception != null ? exception.getMessage() : "null") +
+                ", name='" + testName + '\'' +
+//                ", exception=" + (exception != null ? exception.getMessage() : "null") +
                 '}';
     }
 
@@ -40,12 +40,12 @@ public class TestInfo {
         if (o == null || getClass() != o.getClass()) return false;
         TestInfo test = (TestInfo) o;
         return result == test.result &&
-                Objects.equals(name, test.name) &&
-                Objects.equals(exception, test.exception);
+                Objects.equals(testName, test.testName);
+//                Objects.equals(exception, test.exception);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(result, name, exception);
+        return Objects.hash(result, testName, exception);
     }
 }
