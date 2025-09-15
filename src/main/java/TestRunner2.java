@@ -9,6 +9,7 @@ import org.springframework.cglib.proxy.InvocationHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -35,6 +36,29 @@ public class TestRunner2 implements InvocationHandler  {
                 .collect(toList());
     }
 
+    private static void validateAnnotations(Method[] methods) {
+        for (Method method : methods) {
+            // Проверяем, что @Test, @BeforeEach, @AfterEach не на статических методах
+            if ((method.isAnnotationPresent(Test.class) ||
+                    method.isAnnotationPresent(BeforeEach.class) ||
+                    method.isAnnotationPresent(AfterEach.class)) &&
+                    Modifier.isStatic(method.getModifiers())) {
+                throw new BadTestClassError("Method " + method.getName() + " cannot be static");
+            }
+        }
+    }
+
+    private static void invokeStaticMethods(List<Method> methods) {
+        for (Method method : methods) {
+            try {
+                method.setAccessible(true);
+                method.invoke(null);
+            } catch (Exception e) {
+                throw new BadTestClassError("Failed to invoke static method " + method.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
     public static Map<TestResult, List<TestInfo>> runTests(Class<?> testClass) {
         Method[] methods = testClass.getDeclaredMethods();
         Map<TestResult, List<TestInfo>> results = new EnumMap<>(TestResult.class);
@@ -44,10 +68,7 @@ public class TestRunner2 implements InvocationHandler  {
 
         try {
             // Проверка валидности класса тестов
-//            validateTestClass(c);
-
-            // Создание экземпляра тестового класса
-            Object testInstance = testClass.getDeclaredConstructor().newInstance();
+            validateAnnotations(methods);
 
             // Получение методов
             List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
@@ -56,90 +77,92 @@ public class TestRunner2 implements InvocationHandler  {
             List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
             List<Method> testList = getMethodsByType(methods, Test.class);
 
+            invokeStaticMethods(beforeSuiteMethods);
+
+
+            // Создание экземпляра тестового класса
+            Object testInstance = testClass.getDeclaredConstructor().newInstance();
+
+//            // Получение методов
+//            List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
+//            List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
+//            List<Method> beforeSuiteMethods = getMethodsByType(methods, BeforeSuite.class);
+//            List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
+//            List<Method> testList = getMethodsByType(methods, Test.class);
+
             // Выполнение BeforeSuite методов
             executeMethods(beforeSuiteMethods, null, true);
 
             // Выполнение тестов
 
             for (Method testMethod : testList) {
-                executeSingleTest(testMethod, testInstance, beforeEachMethods, afterEachMethods, results);
+                executeSingleTest(testMethod, testMethod, beforeEachMethods, afterEachMethods, results);
             }
 
-            // Выполнение AfterSuite методов
-            executeMethods(afterSuiteMethods, null, true);
+            // Выполняем AfterSuite методы
+            invokeStaticMethods(afterSuiteMethods);
 
         } catch (Exception e) {
-            throw new BadTestClassError("Failed to execute tests: " + e.getMessage());
+            throw new BadTestClassError("Test execution failed: " + e.getMessage());
         }
 
         return results;
     }
+    private static void invokeInstanceMethods(Object instance, List<Method> methods) {
+        for (Method method : methods) {
+            try {
+                method.setAccessible(true);
+                method.invoke(instance);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to invoke method " + method.getName(), e);
+            }
+        }
+    }
 
-    private static void executeSingleTest(Method testMethod, Object testInstance,
+    private static void executeSingleTest(Object testInstance, Method testMethod,
                                           List<Method> beforeEachMethods, List<Method> afterEachMethods,
                                           Map<TestResult, List<TestInfo>> results) {
-
         String testName = getTestName(testMethod);
-
-        // Проверка на отключенный тест
-        if (testMethod.isAnnotationPresent(Disabled.class)) {
-            results.get(TestResult.SKIPPED).add(new TestInfo(TestResult.SKIPPED, testName, null));
-            return;
-        }
+        Throwable testException = null;
+        TestResult testResult = TestResult.SUCCESS;
 
         try {
-//             Выполнение BeforeEach методов
-            executeMethods(beforeEachMethods, testInstance, false);
+            // Выполняем BeforeEach методы
+            invokeInstanceMethods(testInstance, beforeEachMethods);
 
-//             Выполнение теста
+            // Выполняем тест
             testMethod.setAccessible(true);
+            testMethod.invoke(testInstance);
 
-//            TestSuccess testSuccess1 = new TestSuccess();
-//            TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
-
-//            TestSuccess.beforeAllTests();
-//            if (testMethod.isAnnotationPresent(Test.class)) {
-//                testSuccess.beforeEachTest();
-                testMethod.invoke(testInstance);
-//                testSuccess.afterEachTest();
-//            }
-//            TestSuccess.afterAllTests();
-
-
-//            testMethod.invoke(testInstance);
-
-            // Успешное выполнение
             results.get(TestResult.SUCCESS).add(new TestInfo(TestResult.SUCCESS, testName, null));
 
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof TestAssertionError) {
-                // Тест провален
                 results.get(TestResult.FAILED).add(new TestInfo(TestResult.FAILED, testName, cause));
             } else {
-                // Ошибка выполнения
                 results.get(TestResult.ERROR).add(new TestInfo(TestResult.ERROR, testName, cause));
             }
         } catch (Exception e) {
             results.get(TestResult.ERROR).add(new TestInfo(TestResult.ERROR, testName, e));
         } finally {
+            // Выполняем AfterEach методы
             try {
-                // Выполнение AfterEach методов
-                executeMethods(afterEachMethods, testInstance, false);
+//                invokeInstanceMethods(testInstance, afterEachMethods);
             } catch (Exception e) {
-                // Ошибка в AfterEach не должна влиять на результат теста
+                // Игнорируем ошибки в AfterEach, но логируем
                 System.err.println("Error in AfterEach method: " + e.getMessage());
             }
         }
     }
 
-        private static void executeMethods(List<Method> methods, Object instance, boolean isStatic) throws Exception {
+        private static void executeMethods(List<Method> methods, Object object, boolean isStatic) throws Exception {
         for (Method method : methods) {
             method.setAccessible(true);
             if (isStatic) {
                 method.invoke(null);
             } else {
-                method.invoke(instance);
+                method.invoke(object);
             }
         }
     }

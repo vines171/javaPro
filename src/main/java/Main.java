@@ -1,7 +1,12 @@
+import enums.TestResult;
+
+import java.util.List;
+import java.util.Map;
+
 public class Main {
     public static void main(String[] args)  {
-        TestRunner2.runTests(TestSuccess.class);
-//        TestRunner.runTests(TestSuccess.class);
+        Map<TestResult, List<TestInfo>> results = TestRunner2.runTests(TestSuccess.class);
 
+        System.out.println(results);
     }
 }
