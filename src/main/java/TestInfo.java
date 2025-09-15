@@ -9,7 +9,7 @@ public class TestInfo {
 
     public TestInfo(TestResult result, String testName, Throwable exception) {
         this.result = result;
-        this.testName = this.testName;
+        this.testName = testName;
         this.exception = exception;
     }
 
@@ -30,7 +30,7 @@ public class TestInfo {
         return "Test{" +
                 "result=" + result +
                 ", name='" + testName + '\'' +
-//                ", exception=" + (exception != null ? exception.getMessage() : "null") +
+                ", exception=" + (exception != null ? exception.getMessage() : "null") +
                 '}';
     }
 
@@ -41,7 +41,6 @@ public class TestInfo {
         TestInfo test = (TestInfo) o;
         return result == test.result &&
                 Objects.equals(testName, test.testName);
-//                Objects.equals(exception, test.exception);
     }
 
     @Override

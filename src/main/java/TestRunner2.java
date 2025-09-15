@@ -57,18 +57,16 @@ public class TestRunner2 implements InvocationHandler  {
             List<Method> testList = getMethodsByType(methods, Test.class);
 
             // Выполнение BeforeSuite методов
-//            executeMethods(beforeSuiteMethods, null, true);
+            executeMethods(beforeSuiteMethods, null, true);
 
             // Выполнение тестов
 
-            TestSuccess.beforeAllTests();
             for (Method testMethod : testList) {
                 executeSingleTest(testMethod, testInstance, beforeEachMethods, afterEachMethods, results);
             }
-            TestSuccess.afterAllTests();
 
             // Выполнение AfterSuite методов
-//            executeMethods(afterSuiteMethods, null, true);
+            executeMethods(afterSuiteMethods, null, true);
 
         } catch (Exception e) {
             throw new BadTestClassError("Failed to execute tests: " + e.getMessage());
@@ -90,21 +88,21 @@ public class TestRunner2 implements InvocationHandler  {
         }
 
         try {
-            // Выполнение BeforeEach методов
-//            executeMethods(beforeEachMethods, testInstance, false);
+//             Выполнение BeforeEach методов
+            executeMethods(beforeEachMethods, testInstance, false);
 
-            // Выполнение теста
-//            testMethod.setAccessible(true);
+//             Выполнение теста
+            testMethod.setAccessible(true);
 
-            TestSuccess testSuccess1 = new TestSuccess();
-            TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
+//            TestSuccess testSuccess1 = new TestSuccess();
+//            TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
 
 //            TestSuccess.beforeAllTests();
-            if (testMethod.isAnnotationPresent(Test.class)) {
-                testSuccess.beforeEachTest();
+//            if (testMethod.isAnnotationPresent(Test.class)) {
+//                testSuccess.beforeEachTest();
                 testMethod.invoke(testInstance);
-                testSuccess.afterEachTest();
-            }
+//                testSuccess.afterEachTest();
+//            }
 //            TestSuccess.afterAllTests();
 
 
@@ -127,10 +125,21 @@ public class TestRunner2 implements InvocationHandler  {
         } finally {
             try {
                 // Выполнение AfterEach методов
-//                executeMethods(afterEachMethods, testInstance, false);
+                executeMethods(afterEachMethods, testInstance, false);
             } catch (Exception e) {
                 // Ошибка в AfterEach не должна влиять на результат теста
-//                System.err.println("Error in AfterEach method: " + e.getMessage());
+                System.err.println("Error in AfterEach method: " + e.getMessage());
+            }
+        }
+    }
+
+        private static void executeMethods(List<Method> methods, Object instance, boolean isStatic) throws Exception {
+        for (Method method : methods) {
+            method.setAccessible(true);
+            if (isStatic) {
+                method.invoke(null);
+            } else {
+                method.invoke(instance);
             }
         }
     }
@@ -138,19 +147,11 @@ public class TestRunner2 implements InvocationHandler  {
     @SneakyThrows
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-        TestSuccess testSuccess1 = new TestSuccess();
-        TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
 
-//        TestSuccess.beforeAllTests();
-        System.out.println("Привет!");
-        if (method.isAnnotationPresent(Test.class)) {
-            System.out.println("Привет2");
-//            testSuccess.beforeEachTest();
-            method.invoke(object, args);
-            testSuccess.afterEachTest();
+//        method.invoke(object, args);
+//        return null;
+
+            // Делегируем вызов целевому объекту
+            return method.invoke(object, args);
         }
-        System.out.println("Пока!");
-//        TestSuccess.afterAllTests();
-        return null;
     }
-}
