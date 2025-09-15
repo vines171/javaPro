@@ -56,19 +56,19 @@ public class TestSuccess {
         }
     }
 
-    @Test(priority = 5)
+    @Test(name = "Test normal priority")
     @Order(1)
     void testNormalPriority() {
         System.out.println("Running normal priority test");
     }
 
-    @Test
     @Disabled
+    @Test(name = "Disable test")
     void disabledTest() {
         System.out.println("This test should be skipped");
     }
 
-    @Test
+    @Test(name = "Unexpected error")
     void testWithError() {
         throw new RuntimeException("Unexpected error");
     }
