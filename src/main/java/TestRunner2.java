@@ -23,7 +23,7 @@ public class TestRunner2
     }
 
     Method[] methods = TestSuccess.class.getDeclaredMethods();
-    List<Method> beforeSuiteMethods = getMethodsByType(methods, BeforeSuite.class);
+    List<Method> beforeSuiteMethods ;
     List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
 
 
@@ -51,7 +51,7 @@ public class TestRunner2
         }
 
         try {
-            Object testInstance = testClass.getDeclaredConstructor().newInstance();
+//            Object testInstance = testClass.getDeclaredConstructor().newInstance();
 
             List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
             List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
@@ -59,23 +59,14 @@ public class TestRunner2
             List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
             List<Method> testList = getMethodsByType(methods, Test.class);
 
-
-//            TestSuccess testSuccess1 = new TestSuccess();
-//            TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
-
-//            testSuccess.beforeAllTests();
-//            testSuccess.test1();
-
-            // Выполнение BeforeSuite методов
-//            executeMethods(beforeSuiteMethods, null);
+            beforeSuiteMethods.get(0).invoke(object);
+            System.out.println("++++++++++++++++++");
 
             for (Method testMethod : testList) {
-                executeSingleTest(testMethod, testInstance, beforeEachMethods, afterEachMethods, results);
+                executeSingleTest(testMethod, results);
             }
-
-            // Выполнение AfterSuite методов
-//            executeMethods(afterSuiteMethods, null);
-//            testSuccess.afterAllTests();
+            System.out.println("++++++++++++++++++");
+            afterSuiteMethods.get(0).invoke(object);
 
         } catch (Exception e) {
             throw new BadTestClassError("Failed to execute tests: " + e.getMessage());
@@ -84,9 +75,7 @@ public class TestRunner2
         return results;
     }
 
-    private static void executeSingleTest(Method testMethod, Object testInstance,
-                                          List<Method> beforeEachMethods, List<Method> afterEachMethods,
-                                          Map<TestResult, List<TestInfo>> results) {
+    private static void executeSingleTest(Method testMethod, Map<TestResult, List<TestInfo>> results) {
 
         TestSuccess testSuccess1 = new TestSuccess();
         TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner2(testSuccess1));
@@ -101,12 +90,6 @@ public class TestRunner2
         }
 
         try {
-//             Выполнение BeforeEach методов
-            System.out.println("++++++++++++++++++");
-            executeMethods(beforeEachMethods, testInstance);
-
-//             Выполнение теста
-
             testMethod.setAccessible(true);
             testMethod.invoke(testSuccess);
 
@@ -124,7 +107,7 @@ public class TestRunner2
         } finally {
             // Выполняем AfterEach методы (даже если тест упал)
             try {
-                executeMethods(afterEachMethods, testInstance);
+//                executeMethods(afterEachMethods, testInstance);
             } catch (Exception e) {
                 // Если тест уже упал, сохраняем оригинальное исключение
                 if (testException == null) {
@@ -139,52 +122,17 @@ public class TestRunner2
     }
 
     @SneakyThrows
-    private static void executeMethods(List<Method> methods, Object instance) {
-        for (Method method : methods) {
-            method.setAccessible(true);
-            if (Modifier.isStatic(method.getModifiers())) {
-                method.invoke(null);
-            } else {
-                method.invoke(instance);
-            }
-        }
-    }
-
-//    @SneakyThrows
-//    @Override
-//    public Object invoke(Object proxy, Method method, Object[] args) {
-//        return method.invoke(object, args);
-//    }
-
-
-    @SneakyThrows
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-//        Object obj = method.invoke(object, args);
-
+        List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
+        List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
 
         if(method.isAnnotationPresent(Test.class)) {
-            System.out.println("Привет!");
-
-//            method.invoke(beforeSuiteMethods, args);
+            System.out.println("Привет");
+            beforeEachMethods.get(0).invoke(object);
             method.invoke(object, args);
-//            method.invoke(afterSuiteMethods, args);
-
+            afterEachMethods.get(0).invoke(object);
         }
-
-
         return null;
-
-
-
-//        TestSuccess.beforeAllTests();
-//        if (method.isAnnotationPresent(Test.class)) {
-//            testSuccess.beforeEachTest();
-//            method.invoke(object, args);
-//            testSuccess.afterEachTest();
-//        }
-//        TestSuccess.afterAllTests();
-//        return method.invoke(object, args);
-//                method.invoke(object, args);
     }
 }
