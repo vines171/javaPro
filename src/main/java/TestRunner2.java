@@ -128,10 +128,11 @@ public class TestRunner2
         List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
 
         if(method.isAnnotationPresent(Test.class)) {
-            System.out.println("Привет");
+            System.out.println("------------");
             beforeEachMethods.get(0).invoke(object);
             method.invoke(object, args);
             afterEachMethods.get(0).invoke(object);
+            System.out.println("++++++++++++");
         }
         return null;
     }
