@@ -9,7 +9,6 @@ import org.springframework.cglib.proxy.InvocationHandler;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
@@ -21,10 +20,7 @@ public class TestRunner2
     public TestRunner2(Object object) {
         this.object = object;
     }
-
-    Method[] methods = TestSuccess.class.getDeclaredMethods();
-    List<Method> beforeSuiteMethods ;
-    List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
+    static Method[] methods = TestSuccess.class.getDeclaredMethods();
 
 
     private static String getTestName(Method method) {
@@ -51,22 +47,18 @@ public class TestRunner2
         }
 
         try {
-//            Object testInstance = testClass.getDeclaredConstructor().newInstance();
-
-            List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
-            List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
-            List<Method> beforeSuiteMethods = getMethodsByType(methods, BeforeSuite.class);
-            List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
+            Method beforeSuiteMethod = getMethodByType(BeforeSuite.class);
+            Method afterSuiteMethod = getMethodByType(AfterSuite.class);
             List<Method> testList = getMethodsByType(methods, Test.class);
 
-            beforeSuiteMethods.get(0).invoke(object);
+            beforeSuiteMethod.invoke(object);
             System.out.println("++++++++++++++++++");
 
             for (Method testMethod : testList) {
                 executeSingleTest(testMethod, results);
             }
             System.out.println("++++++++++++++++++");
-            afterSuiteMethods.get(0).invoke(object);
+            afterSuiteMethod.invoke(object);
 
         } catch (Exception e) {
             throw new BadTestClassError("Failed to execute tests: " + e.getMessage());
@@ -93,8 +85,18 @@ public class TestRunner2
             testMethod.setAccessible(true);
             testMethod.invoke(testSuccess);
 
+
+//catch (InvocationTargetException e) {
+//                exception = e.getTargetException();
+//                if (exception instanceof TestAssertionError) {
+//                    result = TestResult.FAILED;
+//                } else {
+//                    result = TestResult.ERROR;
+
+
         } catch (InvocationTargetException e) {
-            Throwable cause = e.getCause();
+            Throwable cause = null;
+//                    = e.getTargetException();
             testException = cause;
             if (cause instanceof TestAssertionError) {
                 testResult = TestResult.FAILED;
@@ -104,36 +106,45 @@ public class TestRunner2
         } catch (Exception e) {
             testException = e;
             testResult = TestResult.ERROR;
-        } finally {
-            // Выполняем AfterEach методы (даже если тест упал)
-            try {
-//                executeMethods(afterEachMethods, testInstance);
-            } catch (Exception e) {
-                // Если тест уже упал, сохраняем оригинальное исключение
-                if (testException == null) {
-                    testException = e;
-                    testResult = TestResult.ERROR;
-                }
-            }
-
-            // Добавляем результат теста
-            results.get(testResult).add(new TestInfo(testResult, testName, testException));
         }
+
+        // Добавляем результат теста
+        results.get(testResult).add(new TestInfo(testResult, testName, testException));
     }
+
+
 
     @SneakyThrows
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
-        List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
-        List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
+        Method beforeEachMethod = getMethodByType(BeforeEach.class);
+        Method afterEachMethod = getMethodByType(AfterEach.class);
 
-        if(method.isAnnotationPresent(Test.class)) {
-            System.out.println("------------");
-            beforeEachMethods.get(0).invoke(object);
+        if (method.isAnnotationPresent(Test.class)) {
+            try {
+            System.out.println("--------------");
+            beforeEachMethod.invoke(object);
             method.invoke(object, args);
-            afterEachMethods.get(0).invoke(object);
-            System.out.println("++++++++++++");
+        } finally {
+            try {
+                afterEachMethod.invoke(object);
+            } catch (Exception e) {
+                System.err.println("Error in AfterEach method: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
+            System.out.println("+++++++++++++++");
+    }
+
         return null;
+}
+
+    private static Method getMethodByType(Class<? extends Annotation> annotation) {
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(annotation)) {
+                return method;
+            }
+        }
+        throw new IllegalStateException("Method not found");
     }
 }
