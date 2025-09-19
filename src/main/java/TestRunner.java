@@ -1,193 +1,129 @@
-//import annotation.*;
-//import enums.TestResult;
-//import exceptions.TestAssertionError;
-//import lombok.SneakyThrows;
-//import org.springframework.cglib.proxy.Enhancer;
-//import org.springframework.cglib.proxy.InvocationHandler;
-//
-//import java.lang.annotation.Annotation;
-//import java.lang.reflect.InvocationTargetException;
-//import java.lang.reflect.Method;
-//import java.util.*;
-//
-//import static java.util.stream.Collectors.toList;
-//
-//public class TestRunner implements InvocationHandler {
-//    static Object object;
-//    public TestRunner(Object object) {
-//        this.object = object;
-//    }
-//    private static String getTestName(Method method) {
-//        String nameValue = method.getDeclaredAnnotation(Test.class).name();
-//        if (nameValue.isBlank()) return nameValue;
-//        return method.getName();
-//    }
-//    private static List<Method> getMethodsByType(Method[] methods, Class<? extends Annotation> annotation) {
-//        return Arrays.stream(methods)
-//                .filter(x -> x.isAnnotationPresent(annotation))
-//                .sorted(Comparator.comparingInt((Method m) -> m.isAnnotationPresent(Order.class) ?
-//                                m.getAnnotation(Order.class).value() : 5)
-//                        .thenComparing(TestRunner::getTestName))
-//                .collect(toList());
-//    }
-//
-//
-////    System.out.println("Before all tests");
-//    //Подготовка тестов для классов
-//
-////    List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
-////    List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
-////    List<Method> beforeSuiteMethods = getMethodsByType(methods, BeforeSuite.class);
-////    List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
-////    List<Method> testMethods = getMethodsByType(methods, Test.class);
-////    List<Method> disabledMethods = getMethodsByType(methods, Disabled.class);
-//
-//
-////    public static Map<TestResult, List<TestInfo>> runTests(Class c) {
-//////        validateTestClass(c);
-//////        Method[] methods = c.getDeclaredMethods();
-////
-////        Map<TestResult, List<TestInfo>> results = new EnumMap<>(TestResult.class);
-////        for (TestResult result : TestResult.values()) {
-////            results.put(result, new ArrayList<>());
-////        }
-////        return results;
-////    }
-//
-//    @SneakyThrows
-//    public static Map<TestResult, List<TestInfo>> runTests(Class<?> testClass) {
-//        Method[] methods = testClass.getDeclaredMethods();
-//        Map<TestResult, List<TestInfo>> results = new EnumMap<>(TestResult.class);
-//
-//        List<Method> beforeEachMethods = getMethodsByType(methods, BeforeEach.class);
-//        List<Method> afterEachMethods = getMethodsByType(methods, AfterEach.class);
-//        List<Method> beforeSuiteMethods = getMethodsByType(methods, BeforeSuite.class);
-//        List<Method> afterSuiteMethods = getMethodsByType(methods, AfterSuite.class);
-//        List<Method> testList = getMethodsByType(methods, Test.class);
-//
-////        testList.add(TestSuccess.class.getDeclaredMethods());
-//
-//
-//        for (Method m : methods) {
-//
-//                System.out.println("Тест не выполнен");
-//
-////
-////            m.invoke(testList);
-//
-//            // Выполнение теста
-////            m.setAccessible(true);
-////            m.invoke(methods);
-//
-//
-//
-////                List<TestInfo> currentExecuteList =
-////                        results.getOrDefault(TestResult.SUCCESS, new ArrayList<>());
-////                currentExecuteList.add(new TestInfo(TestResult.SUCCESS));
-////                results.put(TestResult.SUCCESS, currentExecuteList);
-////    // Инициализируем все возможные результаты
-////        for (TestResult result : TestResult.values()) {
-////        results.put(result, new ArrayList<>());
-////    }
-////
-////        try {
-////
-////        // Создание экземпляра тестового класса
-////        Object testInstance = testClass.getDeclaredConstructor().newInstance();
-//
-//
-//                System.out.printf("Подготовка тестов для класса %s завершена", testClass.getName());
-////        System.out.printf(results.toString());
-////            }
-////            return results;
-//
-//
-//        }
-//        return results;
-//    }
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//    private static void executeSingleTest(Method testMethod, Object testInstance,
-//                                          List<Method> beforeEachMethods, List<Method> afterEachMethods,
-//                                          Map<TestResult, List<TestInfo>> results) {
-//
-//        String testName = getTestName(testMethod);
-//
-//        // Проверка на отключенный тест
-//        if (testMethod.isAnnotationPresent(Disabled.class)) {
-//            results.get(TestResult.SKIPPED).add(new TestInfo(TestResult.SKIPPED, testName, null));
-//            return;
-//        }
-//
-//        try {
-//            // Выполнение BeforeEach методов
-////            executeMethods(beforeEachMethods, testInstance, false);
-//
-//            // Выполнение теста
-//            testMethod.setAccessible(true);
-//            testMethod.invoke(testInstance);
-//
-//            // Успешное выполнение
-//            results.get(TestResult.SUCCESS).add(new TestInfo(TestResult.SUCCESS, testName, null));
-//
-//        } catch (InvocationTargetException e) {
-//            Throwable cause = e.getCause();
-//            if (cause instanceof TestAssertionError) {
-//                // Тест провален
-//                results.get(TestResult.FAILED).add(new TestInfo(TestResult.FAILED, testName, cause));
-//            } else {
-//                // Ошибка выполнения
-//                results.get(TestResult.ERROR).add(new TestInfo(TestResult.ERROR, testName, cause));
-//            }
-//        } catch (Exception e) {
-//            results.get(TestResult.ERROR).add(new TestInfo(TestResult.ERROR, testName, e));
-//        } finally {
-//            try {
-//                // Выполнение AfterEach методов
-////                executeMethods(afterEachMethods, testInstance, false);
-//            } catch (Exception e) {
-//                // Ошибка в AfterEach не должна влиять на результат теста
-////                System.err.println("Error in AfterEach method: " + e.getMessage());
-//            }
-//        }
-//    }
-//
-//
-//    private static void executeMethods(List<Method> methods, Object instance, boolean isStatic) throws Exception {
-//        for (Method method : methods) {
-//            method.setAccessible(true);
-//            if (isStatic) {
-//                method.invoke(null);
-//            } else {
-//                method.invoke(instance);
-//            }
-//        }
-//    }
-//
-//
-//    @Override
-//    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-//        TestSuccess testSuccess1 = new TestSuccess();
-//        TestSuccess testSuccess = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner(testSuccess1));
-//
-//        TestSuccess.beforeAllTests();
-//        if(method.isAnnotationPresent(Test.class)) {
-//            testSuccess.beforeEachTest();
-//            method.invoke(object, args);
-//            testSuccess.afterEachTest();
-//        }
-//        TestSuccess.afterAllTests();
-//        return method.invoke(object, args);
-////                method.invoke(object, args);
-//    }
-//
-//
-//}
+import annotation.*;
+import enums.TestResult;
+import exceptions.BadTestClassError;
+import exceptions.TestAssertionError;
+import lombok.SneakyThrows;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.InvocationHandler;
+import tests.TestSuccess;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
+
+import static java.util.stream.Collectors.toList;
+
+public class TestRunner implements InvocationHandler {
+    public TestRunner(Object object) {
+        this.object = object;
+    }
+
+    static Method[] methods = TestSuccess.class.getDeclaredMethods();
+    static Object object;
+
+    private static String getTestName(Method method) {
+        String nameValue = method.getDeclaredAnnotation(Test.class).name();
+        if (nameValue.isBlank()) return nameValue;
+        return method.getName();
+    }
+
+    private static List<Method> getMethodsByType(Method[] methods) {
+        return Arrays.stream(methods)
+                .filter(x -> x.isAnnotationPresent(Test.class))
+                .sorted(Comparator.comparingInt((Method m) -> m.isAnnotationPresent(Order.class) ?
+                                m.getAnnotation(Order.class).value() : 5)
+                        .thenComparing(TestRunner::getTestName))
+                .collect(toList());
+    }
+
+    @SneakyThrows
+    public static Map<TestResult, List<TestInfo>> runTests(Class<?> testClass) {
+        Method[] methods = testClass.getDeclaredMethods();
+        Map<TestResult, List<TestInfo>> results = new EnumMap<>(TestResult.class);
+        for (TestResult result : TestResult.values()) {
+            results.put(result, new ArrayList<>());
+        }
+
+        try {
+            Method beforeSuiteMethod = getMethodByType(BeforeSuite.class);
+            Method afterSuiteMethod = getMethodByType(AfterSuite.class);
+            List<Method> testList = getMethodsByType(methods);
+
+            beforeSuiteMethod.invoke(object);
+
+            for (Method testMethod : testList) {
+                executeTest(testMethod, results);
+            }
+            afterSuiteMethod.invoke(object);
+
+        } catch (Exception e) {
+            throw new BadTestClassError("Failed to execute tests: " + e.getMessage());
+        }
+        return results;
+    }
+
+    private static void executeTest(Method testMethod, Map<TestResult, List<TestInfo>> results) {
+        TestSuccess testSuccess = new TestSuccess();
+        TestSuccess testSuccessProxy = (TestSuccess) Enhancer.create(TestSuccess.class, new TestRunner(testSuccess));
+
+        String testName = getTestName(testMethod);
+        TestResult testResult = TestResult.SUCCESS;
+        Throwable testException = null;
+
+        if (testMethod.isAnnotationPresent(Disabled.class)) {
+            results.get(TestResult.SKIPPED).add(new TestInfo(TestResult.SKIPPED, testName, null));
+            return;
+        }
+
+        try {
+            testMethod.setAccessible(true);
+            testMethod.invoke(testSuccessProxy);
+
+
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            testException = cause;
+            if (cause instanceof TestAssertionError) {
+                testResult = TestResult.FAILED;
+            } else {
+                testResult = TestResult.ERROR;
+            }
+        } catch (Exception e) {
+            testException = e;
+            testResult = TestResult.ERROR;
+        }
+        results.get(testResult).add(new TestInfo(testResult, testName, testException));
+    }
+
+    @SneakyThrows
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) {
+        Method beforeEachMethod = getMethodByType(BeforeEach.class);
+        Method afterEachMethod = getMethodByType(AfterEach.class);
+
+        if (method.isAnnotationPresent(Test.class)) {
+            try {
+                beforeEachMethod.invoke(object);
+                method.invoke(object, args);
+            } finally {
+                try {
+                    afterEachMethod.invoke(object);
+                } catch (Exception e) {
+                    System.err.println("Error in AfterEach method: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
+
+    private static Method getMethodByType(Class<? extends Annotation> annotation) {
+        for (Method method : methods) {
+            if (method.isAnnotationPresent(annotation)) {
+                return method;
+            }
+        }
+        throw new IllegalStateException("Method not found");
+    }
+}
