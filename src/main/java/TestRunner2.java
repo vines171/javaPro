@@ -100,6 +100,7 @@ public class TestRunner2
             testException = cause;
             if (cause instanceof TestAssertionError) {
                 testResult = TestResult.FAILED;
+                testException = cause;
             } else {
                 testResult = TestResult.ERROR;
             }
@@ -121,18 +122,18 @@ public class TestRunner2
         Method afterEachMethod = getMethodByType(AfterEach.class);
 
         if (method.isAnnotationPresent(Test.class)) {
-            try {
+//            try {
             System.out.println("--------------");
             beforeEachMethod.invoke(object);
             method.invoke(object, args);
-        } finally {
-            try {
-                afterEachMethod.invoke(object);
-            } catch (Exception e) {
-                System.err.println("Error in AfterEach method: " + e.getMessage());
-                e.printStackTrace();
-            }
-        }
+//        } finally {
+//            try {
+//                afterEachMethod.invoke(object);
+//            } catch (Exception e) {
+//                System.err.println("Error in AfterEach method: " + e.getMessage());
+//                e.printStackTrace();
+//            }
+//        }
             System.out.println("+++++++++++++++");
     }
 

@@ -35,7 +35,9 @@ public class TestSuccess {
 
     @Test(name = "Failed test")
     void failedTest() {
-        throw new TestAssertionError("Expected 5");
+//        throw new TestAssertionError("Expected 5");
+        throw new RuntimeException("Unexpected error");
+
 //        requireNonNull(new Object(), "Object should not be null");
     }
 //
