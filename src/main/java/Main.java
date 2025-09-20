@@ -1,5 +1,4 @@
 import enums.TestResult;
-import tests.TestSuccess;
 
 import java.util.List;
 import java.util.Map;

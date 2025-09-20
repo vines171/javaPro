@@ -1,5 +1,3 @@
-package tests;
-
 import annotation.*;
 import exceptions.TestAssertionError;
 

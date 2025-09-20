@@ -5,7 +5,6 @@ import exceptions.TestAssertionError;
 import lombok.SneakyThrows;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.InvocationHandler;
-import tests.TestSuccess;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
