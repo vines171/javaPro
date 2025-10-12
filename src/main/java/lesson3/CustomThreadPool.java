@@ -42,7 +42,7 @@ public class CustomThreadPool {
     public void shutdown() {
         isShutdown = true;
         for (WorkerThread worker : workers) {
-            worker.interrupt(); // прерываем потоки
+            worker.interrupt();
         }
     }
 
@@ -50,16 +50,15 @@ public class CustomThreadPool {
         long timeoutMillis = timeout.toMillis();
         long endTime = System.currentTimeMillis() + timeoutMillis;
 
-        // Ждем завершения всех потоков
         for (WorkerThread worker : workers) {
             long remainingTime = endTime - System.currentTimeMillis();
             if (remainingTime <= 0) {
-                return false; // Таймаут
+                return false;
             }
 
             worker.join(remainingTime);
             if (worker.isAlive()) {
-                return false; // Поток не завершился за отведенное время
+                return false;
             }
         }
 
@@ -89,7 +88,6 @@ public class CustomThreadPool {
         return taskQueue.size();
     }
 
-    // Внутренний класс рабочего потока
     private class WorkerThread extends Thread {
         private final AtomicBoolean isWorking;
 
