@@ -6,11 +6,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class CustomThreadPool {
     private final LinkedList<Runnable> taskQueue = new LinkedList<>();
     private final List<WorkerThread> workers = new ArrayList<>();
-    private final Object lock = new Object();
+    private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
     private volatile boolean isShutdown = false;
     private volatile boolean isTerminated = false;
     private CountDownLatch latch = new CountDownLatch(0);
@@ -31,18 +35,23 @@ public class CustomThreadPool {
         if (isShutdown) {
             throw new IllegalStateException("ThreadPool is shutdown");
         }
-        synchronized (lock) {
+        lock.lock();
+        try {
             taskQueue.addLast(task);
             System.out.println(Thread.currentThread().getName() + ": " + task + " добавлена");
-            lock.notify();
+            condition.signal();
+        } finally {
+            lock.unlock();
         }
-        latch = new CountDownLatch((int) (latch.getCount() + 1));
     }
 
     public void shutdown() {
-        isShutdown = true;
-        for (WorkerThread worker : workers) {
-            worker.interrupt();
+        lock.lock();
+        try {
+            isShutdown = true;
+            condition.signalAll();
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -85,7 +94,12 @@ public class CustomThreadPool {
     }
 
     public int getQueueSize() {
-        return taskQueue.size();
+        lock.lock();
+        try {
+            return taskQueue.size();
+        } finally {
+            lock.unlock();
+        }
     }
 
     private class WorkerThread extends Thread {
@@ -98,29 +112,37 @@ public class CustomThreadPool {
 
         @Override
         public void run() {
-            while (true) {
-                Runnable task;
-                try {
-                    synchronized (lock) {
-                        while (taskQueue.isEmpty() && !isShutdown) {
-                            System.out.println(Thread.currentThread().getName() + " ожидает task");
-                            lock.wait();
-                        }
-                        task = taskQueue.removeFirst();
-                        latch.countDown();
-                    }
-                    try {
-                        task.run();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    if (isShutdown && taskQueue.isEmpty()) {
-                        break;
-                    }
-                    System.out.println(Thread.currentThread().getName() + " Run task " + task);
-                } catch (InterruptedException e) {
-                    break;
+            while (shouldContinue()) {
+                Runnable task = getTask();
+                if (task != null) executeSafely(task);
+            }
+        }
+
+        private boolean shouldContinue() {
+            return !isShutdown || !taskQueue.isEmpty();
+        }
+
+        private Runnable getTask() {
+            lock.lock();
+            try {
+                while (taskQueue.isEmpty() && !isShutdown) {
+                    condition.await();
                 }
+                return taskQueue.poll();
+
+            } catch (InterruptedException e) {
+                return null;
+            } finally {
+                lock.unlock();
+            }
+        }
+
+        private void executeSafely(Runnable task) {
+            isWorking.set(true);
+            try {
+                task.run();
+            } finally {
+                isWorking.set(false);
             }
         }
     }
