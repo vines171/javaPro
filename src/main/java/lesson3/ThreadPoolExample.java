@@ -18,8 +18,6 @@ public class ThreadPoolExample {
             });
         }
 
-        Thread.sleep(2000);
-
         pool.shutdown();
         System.out.println("Pool shutdown initiated");
 
