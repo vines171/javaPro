@@ -1,64 +1,91 @@
 package com.example.service;
 
 import com.example.model.User;
-import com.example.dao.UserDao;
+import com.example.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional
 public class UserService {
-    private final UserDao userDao;
 
-    public UserService(UserDao userDao) {
-        this.userDao = userDao;
+    private final UserRepository userRepository;
+
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public User createUser(String username) {
-        Optional<User> existingUser = userDao.findByUsername(username);
-        if (existingUser.isPresent()) {
-            throw new RuntimeException("User with username '" + username + "' already exists");
+        if (userRepository.existsByUsername(username)) {
+            throw new IllegalArgumentException("User with username '" + username + "' already exists");
         }
 
         User user = new User(username);
-        return userDao.create(user);
+        return userRepository.save(user);
     }
 
+    @Transactional(readOnly = true)
     public Optional<User> getUserById(Long id) {
-        return userDao.findById(id);
+        return userRepository.findById(id);
     }
 
+    @Transactional(readOnly = true)
     public Optional<User> getUserByUsername(String username) {
-        return userDao.findByUsername(username);
+        return userRepository.findByUsername(username);
     }
 
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userDao.findAll();
+        return userRepository.findAllByOrderByIdDesc();
     }
 
     public User updateUser(Long id, String newUsername) {
-        Optional<User> existingUser = userDao.findById(id);
-        if (existingUser.isEmpty()) {
-            throw new RuntimeException("User not found with id: " + id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
+
+        if (!user.getUsername().equals(newUsername) && userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("Username '" + newUsername + "' already exists");
         }
 
-        Optional<User> userWithSameUsername = userDao.findByUsername(newUsername);
-        if (userWithSameUsername.isPresent() && !userWithSameUsername.get().getId().equals(id)) {
-            throw new RuntimeException("Username '" + newUsername + "' is already taken");
-        }
-
-        User user = existingUser.get();
         user.setUsername(newUsername);
-        return userDao.update(user);
+        return userRepository.save(user);
     }
 
     public boolean deleteUser(Long id) {
-        return userDao.delete(id);
+        if (!userRepository.existsById(id)) {
+            return false;
+        }
+        userRepository.deleteById(id);
+        return true;
     }
 
     public boolean deleteUserByUsername(String username) {
-        Optional<User> user = userDao.findByUsername(username);
-        return user.map(value -> userDao.delete(value.getId())).orElse(false);
+        if (userRepository.existsByUsername(username)) {
+            userRepository.deleteByUsername(username);
+            return true;
+        }
+        return false;
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> searchUsersByUsername(String keyword) {
+        return userRepository.findByUsernameContaining(keyword);
+    }
+
+    @Transactional(readOnly = true)
+    public long getUsersCount() {
+        return userRepository.count();
+    }
+
+    public boolean userExists(Long id) {
+        return userRepository.existsById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean usernameExists(String username) {
+        return userRepository.existsByUsername(username);
     }
 }

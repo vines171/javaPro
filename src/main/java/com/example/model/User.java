@@ -1,20 +1,26 @@
 package com.example.model;
 
-import java.util.Objects;
+import javax.persistence.*;
 
+@Entity
+@Table(name = "users")
 public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "username", unique = true, nullable = false, length = 255)
     private String username;
 
-    public User() {
+    public User() {}
+
+    public User(String username) {
+        this.username = username;
     }
 
     public User(Long id, String username) {
         this.id = id;
-        this.username = username;
-    }
-
-    public User(String username) {
         this.username = username;
     }
 
@@ -39,19 +45,16 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return Objects.equals(id, user.id) && Objects.equals(username, user.username);
+        return id != null && id.equals(user.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, username);
+        return getClass().hashCode();
     }
 
     @Override
     public String toString() {
-        return "User{" +
-                "id=" + id +
-                ", username='" + username + '\'' +
-                '}';
+        return "User{id=" + id + ", username='" + username + "'}";
     }
 }
